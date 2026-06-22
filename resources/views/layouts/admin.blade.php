@@ -58,32 +58,34 @@
 @endpush
 
 @section('sidebar-links')
-    <li class="sidebar-list">
-        <a class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-            <i data-feather="home"></i><span>Dashboard</span>
-        </a>
-    </li>
-    <li class="sidebar-list">
-        <a class="sidebar-link {{ request()->routeIs('ar-invoices.*') ? 'active' : '' }}" href="{{ route('ar-invoices.index') }}">
-            <i data-feather="file-text"></i><span>AR Invoices</span>
-        </a>
-    </li>
-    <li class="sidebar-list">
-        <a class="sidebar-link {{ request()->routeIs('ar-payments.*') ? 'active' : '' }}" href="{{ route('ar-payments.index') }}">
-            <i data-feather="credit-card"></i><span>AR Payments</span>
-        </a>
-    </li>
-    <li class="sidebar-list">
-        <a class="sidebar-link {{ request()->routeIs('ar-credit-notes.*') ? 'active' : '' }}" href="{{ route('ar-credit-notes.index') }}">
-            <i data-feather="rotate-ccw"></i><span>Credit Notes</span>
-        </a>
-    </li>
-    <li class="sidebar-list">
-        <a class="sidebar-link {{ request()->routeIs('reports.aged-receivables') ? 'active' : '' }}" href="{{ route('reports.aged-receivables') }}">
-            <i data-feather="bar-chart-2"></i><span>Aged Receivables</span>
-        </a>
-    </li>
     @auth
+        @unless(auth()->user()->isSsoAdmin())
+            <li class="sidebar-list">
+                <a class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                    <i data-feather="home"></i><span>Dashboard</span>
+                </a>
+            </li>
+            <li class="sidebar-list">
+                <a class="sidebar-link {{ request()->routeIs('ar-invoices.*') ? 'active' : '' }}" href="{{ route('ar-invoices.index') }}">
+                    <i data-feather="file-text"></i><span>AR Invoices</span>
+                </a>
+            </li>
+            <li class="sidebar-list">
+                <a class="sidebar-link {{ request()->routeIs('ar-payments.*') ? 'active' : '' }}" href="{{ route('ar-payments.index') }}">
+                    <i data-feather="credit-card"></i><span>AR Payments</span>
+                </a>
+            </li>
+            <li class="sidebar-list">
+                <a class="sidebar-link {{ request()->routeIs('ar-credit-notes.*') ? 'active' : '' }}" href="{{ route('ar-credit-notes.index') }}">
+                    <i data-feather="rotate-ccw"></i><span>Credit Notes</span>
+                </a>
+            </li>
+            <li class="sidebar-list">
+                <a class="sidebar-link {{ request()->routeIs('reports.aged-receivables') ? 'active' : '' }}" href="{{ route('reports.aged-receivables') }}">
+                    <i data-feather="bar-chart-2"></i><span>Aged Receivables</span>
+                </a>
+            </li>
+        @endunless
         @if(auth()->user()->canManageUsers())
             <li class="sidebar-list">
                 <a class="sidebar-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
