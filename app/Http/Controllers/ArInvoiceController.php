@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ArInvoice;
+use App\Models\ArInvoiceLine;
 use App\Models\Customer;
+use App\Models\InvStockBalance;
+use App\Models\InvStockMovement;
 use App\Models\Item;
 use App\Models\SalesOrder;
 use App\Models\Shipto;
@@ -191,9 +194,49 @@ class ArInvoiceController extends Controller
     {
         abort_if($invoice->status !== 'diajukan', 403);
 
-        $invoice->update(['status' => 'disetujui', 'approved_by' => Auth::id(), 'approved_at' => now()]);
+        DB::transaction(function () use ($invoice) {
+            $invoice->update(['status' => 'disetujui', 'approved_by' => Auth::id(), 'approved_at' => now()]);
 
-        return back()->with('success', 'Invoice disetujui.');
+            if ($invoice->warehouse_id) {
+                $invoice->load('lines.item.itemType');
+                foreach ($invoice->lines as $line) {
+                    $this->moveStockOut($invoice, $line);
+                }
+            }
+        });
+
+        return back()->with('success', 'Invoice disetujui dan stok telah diperbarui.');
+    }
+
+    /**
+     * Catat pergerakan stok keluar ke tabel milik app `inv` (inv_stock_movements/inv_stock_balances).
+     * Hanya untuk item is_inventory; invoice tanpa warehouse (billing jasa) diabaikan sama sekali
+     * (sudah dicek di approve() sebelum method ini dipanggil). Cost weighted-average TIDAK diubah
+     * di sini — itu cuma berubah saat barang MASUK (lihat prc\ReceiptController::moveStockIn()).
+     */
+    private function moveStockOut(ArInvoice $invoice, ArInvoiceLine $line): void
+    {
+        if (! $line->item?->itemType?->is_inventory) {
+            return;
+        }
+
+        $balance = InvStockBalance::firstOrCreate(
+            ['item_id' => $line->item_id, 'warehouse_id' => $invoice->warehouse_id],
+            ['qty_on_hand' => 0, 'unit_cost' => 0]
+        );
+
+        InvStockMovement::create([
+            'item_id' => $line->item_id,
+            'warehouse_id' => $invoice->warehouse_id,
+            'qty' => -$line->qty,
+            'type' => 'sale',
+            'unit_cost' => $balance->unit_cost ?: $line->item->unit_cost,
+            'source_type' => 'ar_invoice',
+            'source_id' => $invoice->id,
+            'moved_at' => now(),
+        ]);
+
+        $balance->decrement('qty_on_hand', $line->qty);
     }
 
     public function reject(ArInvoice $invoice): RedirectResponse
