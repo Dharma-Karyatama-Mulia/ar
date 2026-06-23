@@ -78,9 +78,12 @@ class ArPaymentController extends Controller
             return back()->withInput()->with('error', 'Minimal satu invoice harus dialokasikan.');
         }
 
-        $totalAllocated = $allocations->sum(fn ($a) => $a['amount'] + $a['disc_taken_amount'] + $a['write_off_amount']);
-        if ($totalAllocated > $data['amount'] + 0.01) {
-            return back()->withInput()->with('error', 'Total alokasi (termasuk diskon/write-off) tidak boleh melebihi jumlah pembayaran.');
+        // Hanya porsi "amount" (tunai/transfer) yang harus dicocokkan ke jumlah pembayaran —
+        // disc_taken/write_off mengurangi owing di sisi invoice, bukan bagian dari uang yang
+        // benar-benar diterima di kas/bank, jadi tidak ikut dibandingkan ke $data['amount'].
+        $totalCashAllocated = $allocations->sum('amount');
+        if ($totalCashAllocated > $data['amount'] + 0.01) {
+            return back()->withInput()->with('error', 'Total alokasi tunai tidak boleh melebihi jumlah pembayaran.');
         }
 
         $payment = DB::transaction(function () use ($data, $allocations) {
