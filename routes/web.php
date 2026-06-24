@@ -30,6 +30,8 @@ Route::middleware('auth')->group(function () {
     Route::get('reports/aged-receivables', [ReportController::class, 'agedReceivables'])->name('reports.aged-receivables');
     Route::get('reports/aged-receivables-summary', [ReportController::class, 'agedReceivablesSummary'])->name('reports.aged-receivables-summary');
     Route::get('reports/ar-history', [ReportController::class, 'arHistory'])->name('reports.ar-history');
+    Route::get('reports/sales-analysis', [ReportController::class, 'salesAnalysis'])->name('reports.sales-analysis');
+    Route::get('reports/sales-invoice-register', [ReportController::class, 'salesInvoiceRegister'])->name('reports.sales-invoice-register');
 
     // --- AR Invoices: static routes registered before {invoice} (show) ---
     Route::get('ar-invoices', [ArInvoiceController::class, 'index'])->name('ar-invoices.index');

@@ -103,6 +103,16 @@
                     <i data-feather="clock"></i><span>AR History</span>
                 </a>
             </li>
+            <li class="sidebar-list">
+                <a class="sidebar-link {{ request()->routeIs('reports.sales-invoice-register') ? 'active' : '' }}" href="{{ route('reports.sales-invoice-register') }}">
+                    <i data-feather="list"></i><span>Sales Invoice Register</span>
+                </a>
+            </li>
+            <li class="sidebar-list">
+                <a class="sidebar-link {{ request()->routeIs('reports.sales-analysis') ? 'active' : '' }}" href="{{ route('reports.sales-analysis') }}">
+                    <i data-feather="trending-up"></i><span>Sales Analysis</span>
+                </a>
+            </li>
         @endunless
         @if(auth()->user()->canManageUsers())
             <li class="sidebar-list">

@@ -3,12 +3,159 @@
 namespace App\Http\Controllers;
 
 use App\Models\ArInvoice;
+use App\Models\ArInvoiceLine;
 use App\Models\ArPayment;
+use App\Models\Customer;
+use App\Models\CustomerType;
+use App\Models\Item;
+use App\Models\ItemType;
+use App\Models\Salesman;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class ReportController extends Controller
 {
+    /**
+     * Konsolidasi 8 varian "Sales by ..." BS1 (semuanya cuma beda dimensi
+     * group-by) jadi satu report dengan selector, daripada 8 method/view terpisah.
+     */
+    private const SALES_ANALYSIS_DIMS = [
+        'customer' => ['customer'],
+        'customer_item_type_item' => ['customer', 'item_type', 'item'],
+        'customer_type' => ['customer_type'],
+        'customer_type_customer' => ['customer_type', 'customer'],
+        'salesman' => ['salesman'],
+        'item_type' => ['item_type'],
+        'item_type_item' => ['item_type', 'item'],
+        'item_type_item_customer' => ['item_type', 'item', 'customer'],
+    ];
+
+    private const SALES_ANALYSIS_DIM_KEYS = [
+        'customer' => ['key' => 'customer_id', 'label' => 'customer_name'],
+        'customer_type' => ['key' => 'customer_type_id', 'label' => 'customer_type_name'],
+        'salesman' => ['key' => 'salesman_id', 'label' => 'salesman_name'],
+        'item_type' => ['key' => 'item_type_id', 'label' => 'item_type_name'],
+        'item' => ['key' => 'item_id', 'label' => 'item_label'],
+    ];
+
+    public function salesAnalysisLabels(): array
+    {
+        return [
+            'customer' => 'Customer',
+            'customer_item_type_item' => 'Customer / Type / Item',
+            'customer_type' => 'Customer Type',
+            'customer_type_customer' => 'Customer Type / Customer',
+            'salesman' => 'Salesman',
+            'item_type' => 'Type',
+            'item_type_item' => 'Type / Item',
+            'item_type_item_customer' => 'Type / Item / Customer',
+        ];
+    }
+
+    public function salesAnalysis(Request $request): View
+    {
+        $groupBy = array_key_exists($request->input('group_by'), self::SALES_ANALYSIS_DIMS)
+            ? $request->input('group_by')
+            : 'customer';
+        $dims = self::SALES_ANALYSIS_DIMS[$groupBy];
+
+        $dateFrom = $request->date('date_from') ?? now()->startOfMonth();
+        $dateTo = $request->date('date_to') ?? now()->endOfMonth();
+
+        $lines = ArInvoiceLine::with(['invoice.customer.customerType', 'invoice.customer.salesman', 'item.itemType'])
+            ->whereHas('invoice', fn ($q) => $q->whereIn('status', ['disetujui', 'selesai'])
+                ->whereBetween('invoice_date', [$dateFrom, $dateTo]))
+            ->get();
+
+        $rows = $lines->map(function (ArInvoiceLine $line) {
+            $invoice = $line->invoice;
+            $customer = $invoice->customer;
+            $item = $line->item;
+
+            return [
+                'invoice_no' => $invoice->invoice_no,
+                'invoice_date' => $invoice->invoice_date,
+                'customer_id' => $customer?->id,
+                'customer_name' => $customer?->name ?? '(Tanpa Customer)',
+                'customer_type_id' => $customer?->customer_type_id,
+                'customer_type_name' => $customer?->customerType?->name ?? '(Tanpa Tipe Customer)',
+                'salesman_id' => $customer?->salesman_id,
+                'salesman_name' => $customer?->salesman?->name ?? '(Tanpa Salesman)',
+                'item_type_id' => $item?->item_type_id,
+                'item_type_name' => $item?->itemType?->name ?? '(Tanpa Tipe Item)',
+                'item_id' => $line->item_id,
+                'item_label' => $item ? "{$item->item_no} - {$item->description}" : '(Item Dihapus)',
+                'qty' => (float) $line->qty,
+                'amount' => $line->amount,
+            ];
+        })
+            ->when($request->filled('salesman_id'), fn (Collection $r) => $r->where('salesman_id', (int) $request->input('salesman_id')))
+            ->when($request->filled('customer_id'), fn (Collection $r) => $r->where('customer_id', (int) $request->input('customer_id')))
+            ->when($request->filled('item_type_id'), fn (Collection $r) => $r->where('item_type_id', (int) $request->input('item_type_id')))
+            ->when($request->filled('item_id'), fn (Collection $r) => $r->where('item_id', (int) $request->input('item_id')))
+            ->values();
+
+        $groups = $this->groupSalesRows($rows, $dims);
+        $grandTotal = ['qty' => $rows->sum('qty'), 'amount' => $rows->sum('amount')];
+
+        return view('reports.sales-analysis', [
+            'groups' => $groups,
+            'grandTotal' => $grandTotal,
+            'groupBy' => $groupBy,
+            'groupByLabels' => $this->salesAnalysisLabels(),
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'salesmen' => Salesman::orderBy('name')->get(),
+            'customers' => Customer::orderBy('name')->get(),
+            'itemTypes' => ItemType::orderBy('name')->get(),
+            'items' => Item::orderBy('item_no')->get(),
+        ]);
+    }
+
+    private function groupSalesRows(Collection $rows, array $dims): Collection
+    {
+        $dim = $dims[0];
+        $config = self::SALES_ANALYSIS_DIM_KEYS[$dim];
+        $remaining = array_slice($dims, 1);
+
+        return $rows->groupBy($config['key'])->map(function (Collection $group) use ($config, $remaining) {
+            $node = [
+                'label' => $group->first()[$config['label']],
+                'qty' => $group->sum('qty'),
+                'amount' => $group->sum('amount'),
+            ];
+
+            if (empty($remaining)) {
+                $node['rows'] = $group->sortBy('invoice_date')->values();
+            } else {
+                $node['children'] = $this->groupSalesRows($group, $remaining);
+            }
+
+            return $node;
+        })->sortBy('label')->values();
+    }
+
+    public function salesInvoiceRegister(Request $request): View
+    {
+        $dateFrom = $request->date('date_from') ?? now()->startOfMonth();
+        $dateTo = $request->date('date_to') ?? now()->endOfMonth();
+
+        $invoices = ArInvoice::with('customer')
+            ->whereIn('status', ['disetujui', 'selesai'])
+            ->whereBetween('invoice_date', [$dateFrom, $dateTo])
+            ->orderBy('invoice_date')
+            ->orderBy('invoice_no')
+            ->get();
+
+        $grandTotal = [
+            'subtotal' => $invoices->sum('subtotal'),
+            'ppn_amount' => $invoices->sum('ppn_amount'),
+            'total' => $invoices->sum('total'),
+        ];
+
+        return view('reports.sales-invoice-register', compact('invoices', 'grandTotal', 'dateFrom', 'dateTo'));
+    }
     public function openReceivables(): View
     {
         $invoices = ArInvoice::with('customer')
