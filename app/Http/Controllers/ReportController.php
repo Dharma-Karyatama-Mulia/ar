@@ -109,7 +109,7 @@ class ReportController extends Controller
             'salesmen' => Salesman::orderBy('name')->get(),
             'customers' => Customer::orderBy('name')->get(),
             'itemTypes' => ItemType::orderBy('name')->get(),
-            'items' => Item::orderBy('item_no')->get(),
+            'selectedItem' => Item::find($request->integer('item_id') ?: null),
         ]);
     }
 

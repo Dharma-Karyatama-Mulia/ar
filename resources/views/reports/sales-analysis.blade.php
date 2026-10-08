@@ -4,6 +4,7 @@
 @section('breadcrumb', 'Sales Analysis')
 
 @section('content')
+    @include('partials.item-lookup')
     <div class="card">
         <div class="card-body">
             <form method="GET" class="row g-2 mb-3">
@@ -52,11 +53,10 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Item</label>
-                    <select name="item_id" class="form-select">
-                        <option value="">Semua</option>
-                        @foreach($items as $i)
-                            <option value="{{ $i->id }}" {{ (string) request('item_id') === (string) $i->id ? 'selected' : '' }}>{{ $i->item_no }} - {{ $i->description }}</option>
-                        @endforeach
+                    <select name="item_id" class="form-select item-select">
+                        @if($selectedItem)
+                            <option value="{{ $selectedItem->id }}" selected>{{ $selectedItem->item_no }} - {{ $selectedItem->description }}</option>
+                        @endif
                     </select>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">

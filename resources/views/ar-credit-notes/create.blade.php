@@ -4,6 +4,7 @@
 @section('breadcrumb', 'Buat Credit Note')
 
 @section('content')
+    @include('partials.item-lookup')
     <div class="card mb-3">
         <div class="card-body">
             <form method="GET" class="row g-2 align-items-end">
@@ -66,10 +67,8 @@
                             @foreach($selectedInvoice->lines as $line)
                                 <tr class="line-row">
                                     <td>
-                                        <select name="lines[][item_id]" class="form-select item-select" required>
-                                            @foreach($items as $item)
-                                                <option value="{{ $item->id }}" data-price="{{ $item->sales_price }}" @selected($line->item_id === $item->id)>{{ $item->item_no }} - {{ $item->description }}</option>
-                                            @endforeach
+                                        <select name="lines[][item_id]" class="form-select item-select" data-lookup="sold" required>
+                                            <option value="{{ $line->item_id }}" selected>{{ $line->item?->item_no }} - {{ $line->item?->description }}</option>
                                         </select>
                                     </td>
                                     <td><input type="number" step="0.01" name="lines[][qty]" class="form-control qty-input" value="{{ $line->qty }}" required></td>
@@ -96,12 +95,7 @@
         <template id="line-row-template">
             <tr class="line-row">
                 <td>
-                    <select name="lines[][item_id]" class="form-select item-select" required>
-                        <option value="">- Pilih Item -</option>
-                        @foreach($items as $item)
-                            <option value="{{ $item->id }}" data-price="{{ $item->sales_price }}">{{ $item->item_no }} - {{ $item->description }}</option>
-                        @endforeach
-                    </select>
+                    <select name="lines[][item_id]" class="form-select item-select" data-lookup="sold" required></select>
                 </td>
                 <td><input type="number" step="0.01" name="lines[][qty]" class="form-control qty-input" value="1" required></td>
                 <td><input type="number" step="0.01" name="lines[][unit_price]" class="form-control price-input" value="0" required></td>

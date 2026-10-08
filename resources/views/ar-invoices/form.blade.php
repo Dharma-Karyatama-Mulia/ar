@@ -4,6 +4,7 @@
 @section('breadcrumb', $invoice->exists ? 'Edit Invoice' : 'Buat Invoice Manual')
 
 @section('content')
+    @include('partials.item-lookup')
     <div class="card">
         <div class="card-body">
             <form method="POST" action="{{ $invoice->exists ? route('ar-invoices.update', $invoice) : route('ar-invoices.store') }}">
@@ -81,12 +82,9 @@
                         @forelse($invoice->lines ?? [] as $line)
                             <tr class="line-row">
                                 <td>
-                                    <select name="lines[][item_id]" class="form-select item-select" required>
-                                        <option value="">- Pilih Item -</option>
-                                        @foreach($items as $item)
-                                            <option value="{{ $item->id }}" data-price="{{ $item->sales_price }}" @selected($line->item_id === $item->id)>{{ $item->item_no }} - {{ $item->description }}</option>
-                                        @endforeach
-                                    </select>
+                                    <select name="lines[][item_id]" class="form-select item-select" data-lookup="sold" required>
+                                            <option value="{{ $line->item_id }}" selected>{{ $line->item?->item_no }} - {{ $line->item?->description }}</option>
+                                        </select>
                                 </td>
                                 <td><input type="number" step="0.01" name="lines[][qty]" class="form-control qty-input" value="{{ $line->qty }}" required></td>
                                 <td><input type="number" step="0.01" name="lines[][unit_price]" class="form-control price-input" value="{{ $line->unit_price }}" required></td>
@@ -113,12 +111,7 @@
     <template id="line-row-template">
         <tr class="line-row">
             <td>
-                <select name="lines[][item_id]" class="form-select item-select" required>
-                    <option value="">- Pilih Item -</option>
-                    @foreach($items as $item)
-                        <option value="{{ $item->id }}" data-price="{{ $item->sales_price }}">{{ $item->item_no }} - {{ $item->description }}</option>
-                    @endforeach
-                </select>
+                <select name="lines[][item_id]" class="form-select item-select" data-lookup="sold" required></select>
             </td>
             <td><input type="number" step="0.01" name="lines[][qty]" class="form-control qty-input" value="1" required></td>
             <td><input type="number" step="0.01" name="lines[][unit_price]" class="form-control price-input" value="0" required></td>

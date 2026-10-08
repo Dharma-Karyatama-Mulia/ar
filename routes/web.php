@@ -19,6 +19,8 @@ Route::get('/dev-login', [DevLoginController::class, 'index'])->name('dev-login.
 Route::post('/dev-login/{user}', [DevLoginController::class, 'login'])->name('dev-login.login');
 
 Route::middleware('auth')->group(function () {
+    Route::get('lookup/items', [\App\Http\Controllers\LookupController::class, 'items'])->name('lookup.items');
+
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // --- Users (sso_admin only, enforced in controller via middleware below) ---

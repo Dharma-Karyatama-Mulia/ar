@@ -35,9 +35,7 @@ class ArCreditNoteController extends Controller
             $selectedInvoice = ArInvoice::with('lines.item')->find($request->invoice_id);
         }
 
-        $items = Item::where('is_active', true)->where('is_sold', true)->orderBy('description')->get();
-
-        return view('ar-credit-notes.create', compact('invoices', 'selectedInvoice', 'items'));
+        return view('ar-credit-notes.create', compact('invoices', 'selectedInvoice'));
     }
 
     public function store(Request $request): RedirectResponse

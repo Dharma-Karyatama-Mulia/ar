@@ -95,7 +95,6 @@ class ArInvoiceController extends Controller
             'customers' => Customer::where('is_active', true)->orderBy('name')->get(),
             'shiptos' => Shipto::where('is_active', true)->orderBy('name')->get(),
             'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(),
-            'items' => Item::where('is_active', true)->where('is_sold', true)->orderBy('description')->get(),
         ]);
     }
 
@@ -143,7 +142,6 @@ class ArInvoiceController extends Controller
             'customers' => Customer::where('is_active', true)->orderBy('name')->get(),
             'shiptos' => Shipto::where('is_active', true)->orderBy('name')->get(),
             'warehouses' => Warehouse::where('is_active', true)->orderBy('name')->get(),
-            'items' => Item::where('is_active', true)->where('is_sold', true)->orderBy('description')->get(),
         ]);
     }
 

@@ -49,3 +49,9 @@ SSO lokal sungguhan (bukan dev-login) — terdaftar di SSO lokal lewat `AddArApp
 ✅ Alur penuh sudah dicoba (lokal + production) via curl/SSO sungguhan: buat invoice dari SO `selesai` → submit → approve (posting jurnal GL balanced) → catat payment (partial + write-off) → submit → approve (posting jurnal GL balanced) → owing terupdate benar → buat credit note partial → submit → approve → owing berkurang lagi → cek di semua 4 report AR. Juga dicoba invoice manual standalone (tanpa SO) — `due_date` terhitung benar dari `invoice_date + term_days`. RBAC dicoba (viewer diblokir dari create, tetap bisa lihat index). Login via SSO Portal sungguhan (bukan dev-login) sudah dicoba berkali-kali, lokal maupun production.
 
 ⏳ Belum dicoba: tampilan visual penuh di browser asli untuk semua halaman (kebanyakan verifikasi lewat HTTP/curl + Playwright, bukan klik manual satu-satu).
+
+## Dropdown Item = Pencarian Remote (Okt 2026)
+
+Master `items` sekarang berisi ~31rb barang riil hasil import Accurate (`erp-schema` command `erp:import-accurate-master`), jadi form tidak lagi merender seluruh item sebagai `<option>` (sempat ~4 MB per halaman). `partials/item-lookup.blade.php` (Tom Select dari jsDelivr) meng-upgrade setiap `select.item-select` — termasuk baris baru dari `<template>`, lewat MutationObserver — jadi pencarian ke `GET /lookup/items?q=&sold=1` (`LookupController`, maks 30 hasil, multi-kata, `item_no` dicari case-insensitive walau kolomnya collation biner). Server cukup merender `<option>` item yang sedang terpilih (`$line->item`). Memilih item mengisi `.price-input` dengan `sales_price`.
+
+Partial yang sama juga meng-index ulang `lines[][field]` → `lines[i][field]` per `.line-row` saat submit: pola `lines[][field]` membuat PHP memecah tiap field jadi elemen array sendiri, sehingga form baris sebelumnya **tidak pernah bisa disubmit dari browser** (hanya lolos di tes curl yang mengirim index eksplisit).
