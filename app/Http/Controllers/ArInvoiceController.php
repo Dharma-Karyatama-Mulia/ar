@@ -40,6 +40,8 @@ class ArInvoiceController extends Controller
         $eligibleSalesOrders = SalesOrder::with('customer')
             ->where('status', 'selesai')
             ->whereDoesntHave('arInvoice')
+            // SO jasa/proyek dari sls (baris tanpa kode barang) tidak ditagih lewat sini.
+            ->whereDoesntHave('lines', fn ($q) => $q->whereNull('item_id'))
             ->orderByDesc('order_date')
             ->get();
 
@@ -50,6 +52,10 @@ class ArInvoiceController extends Controller
     {
         if ($salesOrder->status !== 'selesai') {
             return back()->with('error', 'Sales Order belum selesai (fully shipped).');
+        }
+
+        if ($salesOrder->lines()->whereNull('item_id')->exists()) {
+            return back()->with('error', 'Sales Order ini berisi baris jasa tanpa kode barang; tidak bisa dibuatkan invoice di sini.');
         }
 
         if (ArInvoice::where('sls_sales_order_id', $salesOrder->id)->exists()) {
