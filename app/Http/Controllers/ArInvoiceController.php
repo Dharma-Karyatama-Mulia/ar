@@ -71,10 +71,11 @@ class ArInvoiceController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
+            // qty_closed = sisa yang ditutup di sls (close short), tidak dikirim → tidak ditagih.
             $invoice->lines()->createMany(
-                $salesOrder->lines->map(fn ($line) => [
+                $salesOrder->lines->filter(fn ($line) => $line->qty - $line->qty_closed > 0.0001)->map(fn ($line) => [
                     'item_id' => $line->item_id,
-                    'qty' => $line->qty,
+                    'qty' => $line->qty - $line->qty_closed,
                     'unit_price' => $line->net_price,
                     'item_override_description' => $line->item_override_description,
                 ])->all()
