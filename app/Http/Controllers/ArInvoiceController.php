@@ -65,8 +65,8 @@ class ArInvoiceController extends Controller
                 'po_number' => $salesOrder->po_number,
                 'sls_sales_order_id' => $salesOrder->id,
                 'invoice_date' => now()->toDateString(),
-                'term_days' => $salesOrder->customer->term_days ?? 0,
-                'due_date' => now()->addDays($salesOrder->customer->term_days ?? 0)->toDateString(),
+                'term_days' => $salesOrder->term_days ?? $salesOrder->customer->term_days ?? 0,
+                'due_date' => now()->addDays($salesOrder->term_days ?? $salesOrder->customer->term_days ?? 0)->toDateString(),
                 'status' => 'draft',
                 'created_by' => Auth::id(),
             ]);
@@ -75,7 +75,7 @@ class ArInvoiceController extends Controller
                 $salesOrder->lines->map(fn ($line) => [
                     'item_id' => $line->item_id,
                     'qty' => $line->qty,
-                    'unit_price' => $line->unit_price,
+                    'unit_price' => $line->net_price,
                     'item_override_description' => $line->item_override_description,
                 ])->all()
             );
