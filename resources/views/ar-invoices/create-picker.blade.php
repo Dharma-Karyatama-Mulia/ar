@@ -8,6 +8,9 @@
         <div class="card-body">
             <h6 class="card-title">Opsi 1 — Dari Sales Order (sls) yang sudah selesai</h6>
             <p class="text-muted small">Customer, ship-to, dan baris item akan otomatis terisi dari Sales Order yang dipilih.</p>
+            @if($erpIntegration ?? false)
+                <div class="alert alert-info small">Integrasi CountSista ERP aktif: faktur Sales Order dari aplikasi Sales dibuat otomatis di ERP saat pengiriman diterima. Opsi ini dinonaktifkan untuk mencegah tagihan ganda.</div>
+            @endif
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>

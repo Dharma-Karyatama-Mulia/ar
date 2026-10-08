@@ -37,6 +37,10 @@ class ArInvoiceController extends Controller
 
     public function createPicker(): View
     {
+        if (config('services.erp.sales_integration')) {
+            return view('ar-invoices.create-picker', ['eligibleSalesOrders' => collect(), 'erpIntegration' => true]);
+        }
+
         $eligibleSalesOrders = SalesOrder::with('customer')
             ->where('status', 'selesai')
             ->whereDoesntHave('arInvoice')
@@ -48,6 +52,11 @@ class ArInvoiceController extends Controller
 
     public function createFromSalesOrder(SalesOrder $salesOrder): RedirectResponse
     {
+        // Integrasi ERP aktif: SO SLS ditagih CountSista ERP otomatis saat pengiriman diterima — mencegah tagihan ganda.
+        if (config('services.erp.sales_integration')) {
+            return back()->with('error', 'Integrasi CountSista ERP aktif: faktur Sales Order dibuat otomatis di ERP, bukan di aplikasi ini.');
+        }
+
         if ($salesOrder->status !== 'selesai') {
             return back()->with('error', 'Sales Order belum selesai (fully shipped).');
         }

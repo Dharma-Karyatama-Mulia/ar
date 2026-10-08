@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Integrasi SLS → CountSista ERP: saat aktif, faktur penjualan SO dibuat oleh ERP (dari pengiriman), bukan di sini.
+    'erp' => [
+        'sales_integration' => (bool) env('ERP_INTEGRATION_ENABLED', false),
+    ],
+
 ];
